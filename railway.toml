@@ -1,0 +1,12 @@
+[build]
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "/entrypoint.sh"
+healthcheckPath = "/health"
+healthcheckTimeout = 1800
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[volumes]]
+mountPath = "/app/chroma_db"
