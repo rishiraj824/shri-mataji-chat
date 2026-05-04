@@ -30,9 +30,15 @@ class ChatRequest(BaseModel):
     language: Optional[str] = "en"  # "en" or "hi"
 
 
+class Source(BaseModel):
+    title: str
+    url: str
+
+
 class ChatResponse(BaseModel):
     answer: str
     session_id: str
+    sources: list[Source] = []
 
 
 @app.post("/chat", response_model=ChatResponse)
@@ -43,11 +49,11 @@ def chat_endpoint(req: ChatRequest):
     if req.language == "hi":
         message = f"[उपयोगकर्ता हिंदी में उत्तर चाहता है] {req.message}"
     try:
-        answer, updated_history = chat(message, history=history)
+        answer, updated_history, sources = chat(message, history=history)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     _sessions[req.session_id] = updated_history
-    return ChatResponse(answer=answer, session_id=req.session_id)
+    return ChatResponse(answer=answer, session_id=req.session_id, sources=sources)
 
 
 @app.delete("/chat/{session_id}")

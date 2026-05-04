@@ -35,10 +35,10 @@ def chat(
     query: str,
     history: Optional[List[dict]] = None,
     top_k: int = 6,
-) -> Tuple[str, List[dict]]:
+) -> Tuple[str, List[dict], List[dict]]:
     """
-    Returns (answer, updated_history).
-    history is a list of {"role": "user"|"assistant", "content": "..."} dicts.
+    Returns (answer, updated_history, sources).
+    sources is a deduplicated list of {"title": str, "url": str}.
     """
     history = history or []
     chunks = retrieve(query, top_k=top_k)
@@ -63,4 +63,14 @@ def chat(
         {"role": "user", "content": query},
         {"role": "assistant", "content": answer},
     ]
-    return answer, updated_history
+
+    seen = set()
+    sources = []
+    for chunk in chunks:
+        url = chunk.get("url", "")
+        title = chunk.get("title", "") or chunk.get("source", "")
+        if url and url not in seen:
+            seen.add(url)
+            sources.append({"title": title, "url": url})
+
+    return answer, updated_history, sources
