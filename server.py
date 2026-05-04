@@ -10,7 +10,7 @@ from chat.bot import chat
 
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
 # Rachel — multilingual voice, works reasonably for Hindi too
-ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
+ELEVENLABS_VOICE_ID = "gI1SSdl2f77YhjHsxqBb"
 
 app = FastAPI(title="Shri Mataji Chat API")
 
