@@ -1,10 +1,16 @@
 import os
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 
 from chat.bot import chat
+
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "")
+# Rachel — multilingual voice, works reasonably for Hindi too
+ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"
 
 app = FastAPI(title="Shri Mataji Chat API")
 
@@ -48,6 +54,41 @@ def chat_endpoint(req: ChatRequest):
 def clear_session(session_id: str):
     _sessions.pop(session_id, None)
     return {"cleared": session_id}
+
+
+class TTSRequest(BaseModel):
+    text: str
+    language: Optional[str] = "en"
+
+
+@app.post("/tts")
+async def tts_endpoint(req: TTSRequest):
+    if not ELEVENLABS_API_KEY or ELEVENLABS_API_KEY == "your_elevenlabs_api_key_here":
+        raise HTTPException(status_code=503, detail="ElevenLabs API key not configured")
+
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+    headers = {
+        "xi-api-key": ELEVENLABS_API_KEY,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+    }
+    payload = {
+        "text": req.text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+    }
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(url, json=payload, headers=headers)
+
+    if resp.status_code != 200:
+        raise HTTPException(status_code=resp.status_code, detail="ElevenLabs TTS failed")
+
+    return StreamingResponse(
+        iter([resp.content]),
+        media_type="audio/mpeg",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @app.get("/health")
